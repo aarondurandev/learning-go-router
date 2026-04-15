@@ -19,6 +19,7 @@ See [_examples/](_examples/) for working code.
 - The HTTP verb shortcuts (`Get`, `Post`, etc.) delegate down to `MethodFunc` → `Method`, so all registration goes through one place.
 - A request that matches a pattern but not the method gets a `405 Method Not Allowed`, not a `404`.
 - URL parameters use `{name}` syntax and are matched segment by segment. Captured values are stored in the request context and retrieved with `URLParam`.
+- Middleware is registered with `Use` and applied to every matched route. Multiple middlewares run in registration order.
 - `*Mux` satisfies `http.Handler` directly, so it can be passed to `http.ListenAndServe` without any wrapping.
 
 ## Roadmap
@@ -26,5 +27,5 @@ See [_examples/](_examples/) for working code.
 - [x] Route registration
 - [x] Request dispatching (404 / 405 handling)
 - [x] URL parameters (`/users/{id}`)
-- [ ] Middleware
+- [x] Middleware
 - [ ] Subrouters / route groups

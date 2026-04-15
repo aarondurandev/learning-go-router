@@ -26,6 +26,7 @@ type Route struct {
 type Mux struct {
 	routes          []Route
 	notFoundHandler http.HandlerFunc
+	middlewares     []func(http.Handler) http.Handler
 }
 
 // compile-time check that *Mux implements Router.
@@ -91,7 +92,8 @@ func (mx *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		matched, params := matchPath(route.pattern, r.URL.Path)
 		if matched && (route.method == r.Method || route.method == "") {
 			ctx := context.WithValue(r.Context(), paramsKey, params)
-			route.handler.ServeHTTP(w, r.WithContext(ctx))
+			handler := chain(mx.middlewares, route.handler)
+			handler.ServeHTTP(w, r.WithContext(ctx))
 			return
 		} else if matched && (route.method != r.Method) {
 			matchFound = true
@@ -108,6 +110,7 @@ func (mx *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
 // URLParam returns the value of the URL parameter with the given key
 // from the request context. Returns an empty string if not found.
 func URLParam(r *http.Request, key string) string {
@@ -142,4 +145,19 @@ func matchPath(pattern string, path string) (bool, map[string]string) {
 		}
 	}
 	return true, params
+}
+
+// Use appends one or more middleware functions to the router's middleware stack.
+// Middleware is applied in registration order — the first registered runs first.
+func (mx *Mux) Use(middlewares ...func(http.Handler) http.Handler) {
+	mx.middlewares = append(mx.middlewares, middlewares...)
+}
+
+// chain wraps the final handler with each middleware in order.
+// Middleware is applied in reverse so the first registered ends up outermost.
+func chain(middlewares []func(http.Handler) http.Handler, final http.Handler) http.Handler {
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		final = middlewares[i](final)
+	}
+	return final
 }

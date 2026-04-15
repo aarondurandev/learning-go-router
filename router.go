@@ -29,4 +29,6 @@ type Router interface {
 
 	// NotFound sets a custom handler for requests that match no route.
 	NotFound(h http.HandlerFunc)
+
+	Use(middlewares ...func(http.Handler) http.Handler)
 }
