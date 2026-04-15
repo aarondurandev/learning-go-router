@@ -1,9 +1,17 @@
 package router
 
 import (
+	"context"
 	"net/http"
 	"strings"
 )
+
+// contextKey is an unexported type for context keys in this package.
+// Using a named type prevents collisions with keys from other packages.
+type contextKey string
+
+// paramsKey is the context key under which URL parameters are stored.
+const paramsKey contextKey = "params"
 
 // Route represents a single registered route, holding the HTTP method,
 // URL pattern, and the handler to invoke on a match.
@@ -80,10 +88,12 @@ func (mx *Mux) NotFound(handlerFn http.HandlerFunc) {
 func (mx *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var matchFound bool = false
 	for _, route := range mx.routes {
-		if route.pattern == r.URL.Path && (route.method == r.Method || route.method == "") {
-			route.handler.ServeHTTP(w, r)
+		matched, params := matchPath(route.pattern, r.URL.Path)
+		if matched && (route.method == r.Method || route.method == "") {
+			ctx := context.WithValue(r.Context(), paramsKey, params)
+			route.handler.ServeHTTP(w, r.WithContext(ctx))
 			return
-		} else if route.pattern == r.URL.Path && (route.method != r.Method) {
+		} else if matched && (route.method != r.Method) {
 			matchFound = true
 		}
 
@@ -98,8 +108,38 @@ func (mx *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+// URLParam returns the value of the URL parameter with the given key
+// from the request context. Returns an empty string if not found.
+func URLParam(r *http.Request, key string) string {
+	params, ok := r.Context().Value(paramsKey).(map[string]string)
+	if !ok {
+		return ""
+	}
+	return params[key]
+}
 
 // NewMux creates and returns a new Mux instance.
 func NewMux() *Mux {
 	return &Mux{}
+}
+
+// matchPath compares a route pattern against a request path.
+// Segments wrapped in {} are treated as parameters and captured into the returned map.
+// Returns false and nil if the path does not match the pattern.
+func matchPath(pattern string, path string) (bool, map[string]string) {
+	patternSegments := strings.Split(pattern, "/")
+	pathSegments := strings.Split(path, "/")
+	if len(patternSegments) != len(pathSegments) {
+		return false, nil
+	}
+	params := make(map[string]string)
+	for i, seg := range patternSegments {
+		if strings.HasPrefix(seg, "{") && strings.HasSuffix(seg, "}") {
+			name := seg[1 : len(seg)-1]
+			params[name] = pathSegments[i]
+		} else if seg != pathSegments[i] {
+			return false, nil
+		}
+	}
+	return true, params
 }
