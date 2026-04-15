@@ -10,55 +10,7 @@ go get github.com/aarondurandev/go-learning-router
 
 ## Usage
 
-```go
-package main
-
-import (
-    "fmt"
-    "net/http"
-
-    router "github.com/aarondurandev/go-learning-router"
-)
-
-func main() {
-    m := router.NewMux()
-
-    m.Get("/", func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "home")
-    })
-
-    m.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "hello there")
-    })
-
-    m.NotFound(func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "not found")
-    })
-
-    http.ListenAndServe(":8080", m)
-}
-```
-
-### Available methods
-
-```go
-m.Get(pattern, handler)
-m.Post(pattern, handler)
-m.Put(pattern, handler)
-m.Patch(pattern, handler)
-m.Delete(pattern, handler)
-
-// Any method
-m.Handle(pattern, handler)
-m.HandleFunc(pattern, handler)
-
-// Explicit method
-m.Method("OPTIONS", pattern, handler)
-m.MethodFunc("OPTIONS", pattern, handler)
-
-// Custom not-found handler
-m.NotFound(handler)
-```
+See [_examples/](_examples/) for working code.
 
 ## Design notes
 
@@ -66,12 +18,13 @@ m.NotFound(handler)
 - `Handle`/`HandleFunc` register a route that matches any HTTP method (stored as an empty string internally).
 - The HTTP verb shortcuts (`Get`, `Post`, etc.) delegate down to `MethodFunc` → `Method`, so all registration goes through one place.
 - A request that matches a pattern but not the method gets a `405 Method Not Allowed`, not a `404`.
+- URL parameters use `{name}` syntax and are matched segment by segment. Captured values are stored in the request context and retrieved with `URLParam`.
 - `*Mux` satisfies `http.Handler` directly, so it can be passed to `http.ListenAndServe` without any wrapping.
 
 ## Roadmap
 
 - [x] Route registration
 - [x] Request dispatching (404 / 405 handling)
-- [ ] URL parameters (`/users/{id}`)
+- [x] URL parameters (`/users/{id}`)
 - [ ] Middleware
 - [ ] Subrouters / route groups
