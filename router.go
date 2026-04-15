@@ -30,5 +30,9 @@ type Router interface {
 	// NotFound sets a custom handler for requests that match no route.
 	NotFound(h http.HandlerFunc)
 
+	// Use appends middleware to the router's middleware stack.
 	Use(middlewares ...func(http.Handler) http.Handler)
+
+	// Group registers a set of routes under a common prefix.
+	Group(prefix string, fn func(Router))
 }

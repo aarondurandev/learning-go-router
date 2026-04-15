@@ -20,6 +20,8 @@ See [_examples/](_examples/) for working code.
 - A request that matches a pattern but not the method gets a `405 Method Not Allowed`, not a `404`.
 - URL parameters use `{name}` syntax and are matched segment by segment. Captured values are stored in the request context and retrieved with `URLParam`.
 - Middleware is registered with `Use` and applied to every matched route. Multiple middlewares run in registration order.
+- Route groups share a common prefix and can have their own middleware stack via `Use`. Group middleware only applies to routes registered through that group.
+- Groups can be nested — a nested group prepends both prefixes automatically.
 - `*Mux` satisfies `http.Handler` directly, so it can be passed to `http.ListenAndServe` without any wrapping.
 
 ## Roadmap
@@ -28,4 +30,4 @@ See [_examples/](_examples/) for working code.
 - [x] Request dispatching (404 / 405 handling)
 - [x] URL parameters (`/users/{id}`)
 - [x] Middleware
-- [ ] Subrouters / route groups
+- [x] Subrouters / route groups

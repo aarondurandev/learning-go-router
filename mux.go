@@ -29,8 +29,18 @@ type Mux struct {
 	middlewares     []func(http.Handler) http.Handler
 }
 
+// group is a set of routes sharing a common prefix and middleware stack.
+// It implements Router by delegating to the parent Mux, prepending the
+// prefix and wrapping handlers with group-level middleware at registration time.
+type group struct {
+	prefix      string
+	mux         *Mux
+	middlewares []func(http.Handler) http.Handler
+}
+
 // compile-time check that *Mux implements Router.
 var _ Router = (*Mux)(nil)
+var _ Router = (*group)(nil)
 
 // Method registers a handler for the given HTTP method and pattern.
 // The method is normalized to uppercase before storing.
@@ -160,4 +170,50 @@ func chain(middlewares []func(http.Handler) http.Handler, final http.Handler) ht
 		final = middlewares[i](final)
 	}
 	return final
+}
+
+// Group creates a new route group under the given prefix and calls fn with it.
+func (mx *Mux) Group(prefix string, fn func(Router)) {
+	fn(&group{prefix: prefix, mux: mx})
+}
+
+// Method registers a handler for the given method and pattern, prepending the
+// group prefix and wrapping the handler with the group's middleware chain.
+func (g *group) Method(method, pattern string, h http.Handler) {
+	g.mux.Method(method, g.prefix+pattern, chain(g.middlewares, h))
+}
+
+func (g *group) MethodFunc(method, pattern string, h http.HandlerFunc) {
+	g.Method(method, pattern, h)
+}
+
+func (g *group) Handle(pattern string, h http.Handler) {
+	g.Method("", pattern, h)
+}
+
+func (g *group) HandleFunc(pattern string, h http.HandlerFunc) {
+	g.Method("", pattern, h)
+}
+
+func (g *group) Get(pattern string, h http.HandlerFunc)    { g.Method("GET", pattern, h) }
+func (g *group) Post(pattern string, h http.HandlerFunc)   { g.Method("POST", pattern, h) }
+func (g *group) Put(pattern string, h http.HandlerFunc)    { g.Method("PUT", pattern, h) }
+func (g *group) Delete(pattern string, h http.HandlerFunc) { g.Method("DELETE", pattern, h) }
+func (g *group) Patch(pattern string, h http.HandlerFunc)  { g.Method("PATCH", pattern, h) }
+
+// NotFound delegates to the parent mux — not-found handling is router-wide.
+func (g *group) NotFound(h http.HandlerFunc) { g.mux.NotFound(h) }
+
+// ServeHTTP delegates to the parent mux.
+func (g *group) ServeHTTP(w http.ResponseWriter, r *http.Request) { g.mux.ServeHTTP(w, r) }
+
+// Use appends middleware to the group's own middleware stack.
+// These middlewares only apply to routes registered through this group.
+func (g *group) Use(middlewares ...func(http.Handler) http.Handler) {
+	g.middlewares = append(g.middlewares, middlewares...)
+}
+
+// Group creates a nested group, prepending this group's prefix to the new prefix.
+func (g *group) Group(prefix string, fn func(Router)) {
+	g.mux.Group(g.prefix+prefix, fn)
 }
