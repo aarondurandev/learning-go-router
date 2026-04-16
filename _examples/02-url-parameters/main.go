@@ -1,3 +1,5 @@
+// This example demonstrates URL parameters using {name} syntax.
+// Parameter values are retrieved from the request context with URLParam.
 package main
 
 import (

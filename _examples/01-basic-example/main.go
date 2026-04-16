@@ -1,3 +1,4 @@
+// This example demonstrates basic route registration and a custom 404 handler.
 package main
 
 import (

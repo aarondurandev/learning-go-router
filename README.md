@@ -23,6 +23,7 @@ See [_examples/](_examples/) for working code.
 - Route groups share a common prefix and can have their own middleware stack via `Use`. Group middleware only applies to routes registered through that group.
 - Groups can be nested — a nested group prepends both prefixes automatically.
 - `*Mux` satisfies `http.Handler` directly, so it can be passed to `http.ListenAndServe` without any wrapping.
+- Wildcard routes use a trailing `*` segment (`/files/*`) and match the rest of the path regardless of depth. The captured tail is retrieved with `URLParam(r, "*")`.
 
 ## Roadmap
 
@@ -31,3 +32,5 @@ See [_examples/](_examples/) for working code.
 - [x] URL parameters (`/users/{id}`)
 - [x] Middleware
 - [x] Subrouters / route groups
+- [x] Tests
+- [x] Wildcards (`/files/*`)

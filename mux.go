@@ -40,6 +40,8 @@ type group struct {
 
 // compile-time check that *Mux implements Router.
 var _ Router = (*Mux)(nil)
+
+// compile-time check that *group implements Router.
 var _ Router = (*group)(nil)
 
 // Method registers a handler for the given HTTP method and pattern.
@@ -137,11 +139,30 @@ func NewMux() *Mux {
 }
 
 // matchPath compares a route pattern against a request path.
-// Segments wrapped in {} are treated as parameters and captured into the returned map.
+// Segments wrapped in {} are treated as named parameters and captured into the returned map.
+// A trailing * segment matches the rest of the path and is stored under the key "*".
 // Returns false and nil if the path does not match the pattern.
 func matchPath(pattern string, path string) (bool, map[string]string) {
 	patternSegments := strings.Split(pattern, "/")
 	pathSegments := strings.Split(path, "/")
+	isWildcard := len(patternSegments) > 0 && patternSegments[len(patternSegments)-1] == "*"
+	if isWildcard {
+		prefixLen := len(patternSegments) - 1
+		if len(pathSegments) < prefixLen {
+			return false, nil
+		}
+		params := make(map[string]string)
+		for i, seg := range patternSegments[:prefixLen] {
+			if strings.HasPrefix(seg, "{") && strings.HasSuffix(seg, "}") {
+				name := seg[1 : len(seg)-1]
+				params[name] = pathSegments[i]
+			} else if seg != pathSegments[i] {
+				return false, nil
+			}
+		}
+		params["*"] = strings.Join(pathSegments[prefixLen:], "/")
+		return true, params
+	}
 	if len(patternSegments) != len(pathSegments) {
 		return false, nil
 	}
@@ -155,6 +176,7 @@ func matchPath(pattern string, path string) (bool, map[string]string) {
 		}
 	}
 	return true, params
+
 }
 
 // Use appends one or more middleware functions to the router's middleware stack.

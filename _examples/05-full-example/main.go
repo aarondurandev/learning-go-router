@@ -1,3 +1,5 @@
+// This example combines all router features: global middleware, route groups
+// with their own middleware stacks, URL parameters, and a custom 404 handler.
 package main
 
 import (

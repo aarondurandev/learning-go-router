@@ -1,3 +1,5 @@
+// This example demonstrates router-level middleware.
+// Middleware registered with Use runs for every matched route, in registration order.
 package main
 
 import (

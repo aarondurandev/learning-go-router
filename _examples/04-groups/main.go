@@ -1,3 +1,5 @@
+// This example demonstrates route groups. Routes registered inside a group
+// are automatically prefixed, making API versioning straightforward.
 package main
 
 import (
@@ -12,7 +14,7 @@ func main() {
 	m.Group("/api/v1", func(r router.Router) {
 		r.Get("/users", usersHandlerV1)
 	})
-	m.Group("/api/v2", func(r router.Router){
+	m.Group("/api/v2", func(r router.Router) {
 		r.Get("/users", usersHandlerV2)
 	})
 	http.ListenAndServe(":8080", m)
@@ -26,3 +28,4 @@ func usersHandlerV2(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "users endpoint v2")
 
 }
+	
