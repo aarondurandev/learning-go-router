@@ -12,6 +12,8 @@ go get github.com/aarondurandev/go-learning-router
 
 See [_examples/](_examples/) for working code.
 
+> **v2 available** — [v2/](v2/) uses a radix tree for O(log n) matching: `go get github.com/aarondurandev/go-learning-router/v2`
+
 ## Design notes
 
 - Routes are stored as a slice and matched linearly — simple and easy to reason about.
